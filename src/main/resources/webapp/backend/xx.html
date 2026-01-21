@@ -1,0 +1,168 @@
+<html>
+<body>
+<div id="box">
+    <input type="checkbox" id="checkBox">
+    <label for="checkBox"></label>
+</div>
+<iframe src="https://www.baidu.com"></iframe>
+</body>
+</html>
+
+<style scoped>
+    html,
+    body {
+        background-color: #fff;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    iframe {
+        flex: 1;
+    }
+
+    html.dark {
+        filter: invert(1) hue-rotate(180deg);
+
+        img,
+        video,
+        .avatar,
+        .image,
+        .thumb,
+        #box {
+            filter: invert(1) hue-rotate(180deg);
+        }
+    }
+
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+        mix-blend-mode: normal;
+    }
+
+    ::view-transition-old(root) {
+        z-index: 1;
+    }
+
+    ::view-transition-new(root) {
+        z-index: 2147483646;
+    }
+
+    html.dark::view-transition-old(root) {
+        z-index: 2147483646;
+    }
+
+    html.dark::view-transition-new(root) {
+        z-index: 1;
+    }
+
+    #checkBox {
+        opacity: 0;
+        width: 0;
+    }
+
+    #box>label {
+        width: 70px;
+        height: 30px;
+        border-radius: 30px;
+        border: 1px solid #dcdfe6;
+        background-color: #f2f2f2;
+        position: relative;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+    }
+
+    #checkBox:checked+label {
+        background-color: #2c2c2c;
+        border: 1px solid #4c4d4f;
+    }
+
+    #box>label::before {
+        content: '🌞';
+        position: absolute;
+        left: 0;
+        line-height: 25px;
+        font-size: 18px;
+        text-align: center;
+        background-color: #fff;
+        border-radius: 18px;
+        border: 1px solid #dcdfe6;
+        transition: all 0.3s;
+    }
+
+    #checkBox:checked+label::before {
+        display: none;
+    }
+
+    #checkBox+label::after {
+        content: '🌙';
+        position: absolute;
+        display: none;
+        left: 0;
+        line-height: 25px;
+        font-size: 18px;
+        text-align: center;
+        background-color: #141414;
+        border-radius: 18px;
+        border: 1px solid #4c4d4f;
+        transition: all 0.3s;
+    }
+
+    #checkBox:checked+label::after {
+        left: calc(100% - 26px);
+        right: 0;
+        display: block;
+        border: 1px solid #4c4d4f;
+        transition: all 0.3s;
+    }
+
+</style>
+
+<script>
+    document.getElementById('checkBox').addEventListener('click', function (event) {
+        toggleTheme(event);
+    });
+
+    // 切换主题
+    function toggleTheme(event) {
+        // 检查浏览器是否支持 View Transition API
+        if (!document.startViewTransition) {
+            // 不支持则直接切换主题，不添加动画
+            document.documentElement.classList.toggle('dark')
+            return
+        }
+
+        const transition = document.startViewTransition(() => {
+            document.documentElement.classList.toggle('dark')
+        })
+
+        transition.ready.then(() => {
+            const { clientX, clientY } = event
+
+            const endRadius = Math.hypot(Math.max(clientX, innerWidth - clientX), Math.max(clientY, innerHeight - clientY))
+
+            const clipPath = [`circle(0px at ${clientX}px ${clientY}px)`, `circle(${endRadius}px at ${clientX}px ${clientY}px)`]
+
+            const isDark = document.documentElement.classList.contains('dark')
+
+            document.documentElement.animate(
+                {
+                    clipPath: isDark ? clipPath.reverse() : clipPath
+                },
+                {
+                    duration: 450,
+                    easing: 'ease-in',
+                    pseudoElement: isDark ? '::view-transition-old(root)' : '::view-transition-new(root)'
+                }
+            )
+        })
+    }
+
+</script>
