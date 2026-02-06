@@ -88,7 +88,7 @@ export default {
       pos.value = { x: e.clientX, y: e.clientY };
     }
 
-    function onChange(val, e) {
+    function onChange(val) {
       const clickX = pos.value.x ?? window.innerWidth / 2;
       const clickY = pos.value.y ?? window.innerHeight / 2;
       const maxRadius = Math.hypot(
