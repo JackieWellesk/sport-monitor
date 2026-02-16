@@ -9,6 +9,7 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import './assets/styles/global.css'
 import './assets/styles/dark-anime.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import router from "@/router";
 
 const app = createApp(App)
 
@@ -19,4 +20,5 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 // 使用 Element Plus 插件
 app.use(ElementPlus)
 app.use(i18n); // 使用 i18n
+app.use(router)
 app.mount('#app')

@@ -10,6 +10,8 @@ const i18n = createI18n({
         zh: { ...zh, ...zhCn },  // 合并 element-plus 中文包
         en: { ...en, ...enUs },  // 合并 element-plus 英文包
     },
+    legacy: false,
+    globalInjection: true
 });
 
 export default i18n;
