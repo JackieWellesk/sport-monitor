@@ -25,6 +25,21 @@
         <el-menu-item index="__lang_zh__" @click="setLang('zh')">中文</el-menu-item>
         <el-menu-item index="__lang_en__" @click="setLang('en')">en</el-menu-item>
       </el-sub-menu>
+
+      <el-menu-item v-if="isLoggedIn" index="__user__" class="user-menu-item">
+        <el-dropdown trigger="click" @command="handleUserCommand">
+          <span class="user-trigger">
+            <el-avatar :size="28" :src="userAvatar" :icon="UserFilled" />
+            <el-text class="user-name" truncated>{{ userName }}</el-text>
+            <el-icon class="user-caret"><ArrowDown /></el-icon>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </el-menu-item>
     </template>
 
     <!-- 手机端 -->
@@ -78,13 +93,96 @@
 <script setup>
 // 组件名（可选，但建议加，避免一些规则/调试更清楚）
 defineOptions({ name: 'HeaderBar' })
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { Menu, Close, Sunny, Moon } from '@element-plus/icons-vue'
+import { Menu, Close, Sunny, Moon, ArrowDown, UserFilled } from '@element-plus/icons-vue'
 import { useDark } from '@/hooks/useDark'
 import { useResponsive } from '@/composables/useResponsive'
 
 const { isMobile } = useResponsive()
+
+const router = useRouter()
+
+/** 轻量读取登录信息：兼容你可能使用的 localStorage 字段 */
+const userName = ref('')
+const userAvatar = ref('')
+const isLoggedIn = computed(() => Boolean(userName.value))
+
+function readAuthFromStorage() {
+  // 1) user（JSON）
+  try {
+    const rawUser = localStorage.getItem('user')
+    if (rawUser) {
+      const u = JSON.parse(rawUser)
+      userName.value = u?.username || u?.name || u?.nickName || u?.nickname || ''
+      userAvatar.value = u?.avatar || u?.avatarUrl || u?.headImg || ''
+      if (userName.value) return
+    }
+  } catch (exception) {
+    console.log(exception)
+  }
+
+  // 2) 单独字段
+  userName.value =
+      localStorage.getItem('username') ||
+      localStorage.getItem('userName') ||
+      localStorage.getItem('name') ||
+      ''
+
+  userAvatar.value =
+      localStorage.getItem('avatar') ||
+      localStorage.getItem('avatarUrl') ||
+      ''
+
+  // 3) 仅 token：但没有用户名就不展示（避免显示空白）
+}
+
+function clearAuth() {
+  ['token', 'access_token', 'Authorization', 'user', 'username', 'userName', 'name', 'avatar', 'avatarUrl'].forEach((k) =>
+      localStorage.removeItem(k)
+  )
+}
+
+function logout() {
+  ElMessageBox.confirm('确认退出登录吗？', '提示', {
+    confirmButtonText: '退出',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+      .then(() => {
+        clearAuth()
+        readAuthFromStorage()
+        // 手机端也顺便收起面板
+        panelOpen.value = false
+        ElMessage.success('已退出')
+        router.push('/login')
+      })
+      .catch(() => {})
+}
+
+function handleUserCommand(cmd) {
+  if (cmd === 'logout') logout()
+}
+
+function onStorageChange(e) {
+  if (!e?.key) return
+  // 登录信息变化时刷新 header 显示
+  if (['token', 'access_token', 'Authorization', 'user', 'username', 'userName', 'name', 'avatar', 'avatarUrl'].includes(e.key)) {
+    readAuthFromStorage()
+  }
+}
+
+onMounted(() => {
+  readAuthFromStorage()
+  window.addEventListener('storage', onStorageChange)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', onStorageChange)
+})
+
 // 手机端面板开关（控制 el-drawer）
 const panelOpen = ref(false)
 function togglePanel() {
@@ -178,6 +276,32 @@ watch(isMobile, (m) => {
 .mobile-el-switch {
   margin-left: auto;
 }
+
+.user-menu-item {
+  padding-right: 8px;
+}
+.user-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.user-name {
+  max-width: 120px;
+}
+.user-caret {
+  font-size: 12px;
+}
+.mobile-user {
+  gap: 10px;
+}
+.mobile-user-name {
+  margin-left: 6px;
+  flex: 1;
+}
+.mobile-logout-btn {
+  margin-left: auto;
+}
+
 .mobile-menu-item {
   background-color: var(--el-fill-color-light);
   margin-bottom: 5px;

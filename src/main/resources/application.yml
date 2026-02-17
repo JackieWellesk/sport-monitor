@@ -1,0 +1,51 @@
+# Tomcat
+server:
+  tomcat:
+    uri-encoding: UTF-8
+  port: 8080
+  servlet:
+    context-path: /springboot02098g12
+
+
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/springboot02098g12?useUnicode=true&characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=GMT%2B8&useSSL=false
+    username: root
+    password: 123456
+
+  #        driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  #        url: jdbc:sqlserver://127.0.0.1:1433;DatabaseName=springboot02098g12
+  #        username: sa
+  #        password: 123456
+
+  servlet:
+    multipart:
+      max-file-size: 300MB
+      max-request-size: 300MB
+
+#mybatis
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  #???????package?????????
+  typeAliasesPackage: com.entity
+  global-config:
+    #????  0:"???ID??", 1:"????ID",2:"????ID (??????ID)", 3:"????ID UUID";
+    id-type: 1
+    #???? 0:"????",1:"? NULL ??"),2:"????"
+    field-strategy: 1
+    #???????
+    db-column-underline: true
+    #??mapper ????
+    refresh-mapper: true
+    #??????
+    logic-delete-value: -1
+    logic-not-delete-value: 0
+    #???SQL???
+    sql-injector: com.baomidou.mybatisplus.mapper.LogicSqlInjector
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    call-setters-on-nulls: true
+    #springboot ??mybatis plus ?? jdbcTypeForNull (oracle??????JdbcType.NULL, ???Other)
+    jdbc-type-for-null: 'null'
