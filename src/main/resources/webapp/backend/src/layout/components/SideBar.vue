@@ -3,21 +3,18 @@
   <el-menu
       v-if="!isMobile"
       class="sidebar-menu"
-      :default-active="$route.path"
+      :default-active="route.path"
       router
+      unique-opened
   >
-    <el-sub-menu index="home">
-      <template #title>
-        <span>首页</span>
-      </template>
-
-      <el-menu-item index="/button">Button 按钮</el-menu-item>
-      <el-menu-item index="/input">Input 输入框</el-menu-item>
-      <el-menu-item index="/form">Form 表单</el-menu-item>
-    </el-sub-menu>
+    <SidebarItem
+        v-for="item in menus"
+        :key="item.key"
+        :item="item"
+    />
   </el-menu>
 
-  <!-- 移动端：只显示入口按钮，菜单放到 Drawer 里 -->
+  <!-- 移动端：入口按钮 + Drawer 菜单 -->
   <el-card v-else shadow="never" class="mobile-menu-bar">
     <el-button
         text
@@ -25,7 +22,7 @@
         :icon="Menu"
         @click="drawerOpen = true"
     >
-      Menu
+      {{ $t('message.menu') }}
     </el-button>
 
     <el-drawer
@@ -39,20 +36,17 @@
       <el-scrollbar height="100%">
         <el-menu
             class="sidebar-menu"
-            :default-active="$route.path"
+            :default-active="route.path"
             router
+            unique-opened
             @select="drawerOpen = false"
             :default-openeds="openMenus"
         >
-          <el-sub-menu index="home">
-            <template #title>
-              <span>首页</span>
-            </template>
-
-            <el-menu-item index="/button">Button 按钮</el-menu-item>
-            <el-menu-item index="/input">Input 输入框</el-menu-item>
-            <el-menu-item index="/form">Form 表单</el-menu-item>
-          </el-sub-menu>
+          <SidebarItem
+              v-for="item in menus"
+              :key="item.key"
+              :item="item"
+          />
         </el-menu>
       </el-scrollbar>
     </el-drawer>
@@ -60,32 +54,60 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Menu } from '@element-plus/icons-vue'
 import { useMediaQuery } from '@vueuse/core'
+import { useRoute } from 'vue-router'
+
+import { useAuthStore } from '@/stores/auth'
+import { menuTree, filterMenuByRole } from '@/config/menu'
+import SidebarItem from '@/layout/components/SidebarItem.vue'
 
 defineOptions({ name: 'SideBar' })
 
-// 手机端判断
 const isMobile = useMediaQuery('(max-width: 767px)')
-
 const drawerOpen = ref(false)
 
-const openMenus = ['home']
-// 从移动端切回桌面端时，自动关掉抽屉，避免状态残留
-watch(
-    () => isMobile,
-    (m) => {
-      if (!m) drawerOpen.value = false
+const route = useRoute()
+const authStore = useAuthStore()
+const menus = computed(() => {
+  if (!authStore.inited) return []
+  if (!authStore.user) return []
+  let res = filterMenuByRole(menuTree, authStore.user.roleCode);
+  return res
+})
+
+// 默认展开：展开“当前路径所在的父节点”
+const openMenus = computed(() => {
+  const opens = []
+  const cur = route.path
+
+  function walk(list, parents = []) {
+    for (const node of list || []) {
+      if (node.path === cur) {
+        for (const p of parents) {
+          if (p.children && p.children.length) opens.push(p.path)
+        }
+      }
+      if (node.children && node.children.length) {
+        walk(node.children, [...parents, node])
+      }
     }
-)
+  }
+
+  walk(menus.value, [])
+  return Array.from(new Set(opens))
+})
+
+watch(isMobile, (m) => {
+  if (!m) drawerOpen.value = false
+})
 </script>
 
 <style scoped>
 .sidebar-menu {
   height: 100%;
 }
-
 
 .mobile-menu-bar {
   width: 100%;
@@ -98,8 +120,7 @@ watch(
 
 .mobile-menu-btn {
   width: 100%;
-  justify-content: flex-start; /* 图标文字靠左 */
+  justify-content: flex-start;
   padding: 0;
 }
-
 </style>

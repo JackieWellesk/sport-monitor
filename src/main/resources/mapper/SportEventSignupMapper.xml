@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="geist.hegel.dao.SportEventSignupMapper">
+
+    <select id="selectPageByCond" resultType="geist.hegel.entity.SportEventSignup">
+        SELECT
+        s.*,
+
+        -- 赛事名称
+        (
+        SELECT e.title
+        FROM sport_event e
+        WHERE e.id = s.event_id
+        ) AS event_name,
+
+        -- 学生用户名
+        (
+        SELECT u.username
+        FROM sys_user u
+        WHERE u.id = s.user_id
+        ) AS user_name
+
+        FROM sport_event_signup s
+
+        <where>
+            <if test="cond.eventId != null">
+                AND s.event_id = #{cond.eventId}
+            </if>
+            <if test="cond.userId != null">
+                AND s.user_id = #{cond.userId}
+            </if>
+            <if test="cond.status != null">
+                AND s.status = #{cond.status}
+            </if>
+
+            <!-- ✅ teacherId：查该老师创建的赛事的所有报名人 -->
+            <if test="cond.teacherId != null">
+                AND EXISTS (
+                SELECT 1
+                FROM sport_event e2
+                WHERE e2.id = s.event_id
+                AND e2.created_by = #{cond.teacherId}
+                )
+            </if>
+        </where>
+
+        ORDER BY s.signup_time DESC
+    </select>
+
+</mapper>

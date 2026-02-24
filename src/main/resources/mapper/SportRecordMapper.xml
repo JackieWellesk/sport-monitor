@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="geist.hegel.dao.SportRecordMapper">
+
+    <select id="selectByUserAndTimeRange" resultType="geist.hegel.entity.SportRecord">
+        SELECT
+        id, user_id AS userId, source, sport_type AS sportType,
+        start_time AS startTime, duration_min AS durationMin,
+        calorie_kcal AS calorieKcal, distance_km AS distanceKm,
+        avg_hr AS avgHr, device_id AS deviceId, remark
+        FROM sport_record
+        WHERE user_id = #{userId}
+        AND start_time IS NOT NULL
+        AND start_time >= #{start}
+        AND start_time &lt;= #{end}
+        ORDER BY start_time ASC
+    </select>
+
+    <select id="selectMonthAgg" resultType="geist.hegel.dto.TrendMonthAgg">
+        SELECT
+        DATE_FORMAT(start_time, '%Y-%m') AS month,
+        COUNT(*) AS totalSessions,
+        SUM(duration_min) AS totalMinutes,
+        SUM(calorie_kcal) AS totalCalories,
+        IFNULL(SUM(distance_km), 0) AS totalDistance
+        FROM sport_record
+        WHERE user_id = #{userId}
+        AND start_time IS NOT NULL
+        AND start_time >= #{start}
+        AND start_time &lt;= #{end}
+        GROUP BY DATE_FORMAT(start_time, '%Y-%m')
+        ORDER BY month ASC
+    </select>
+
+    <select id="selectRunMonthAgg" resultType="geist.hegel.dto.RunMonthAgg">
+        SELECT
+        DATE_FORMAT(start_time, '%Y-%m') AS month,
+        AVG(distance_km) AS avgDistance,
+        AVG(duration_min) AS avgDuration,
+        AVG(avg_hr) AS avgHeartRate
+        FROM sport_record
+        WHERE user_id = #{userId}
+        AND sport_type = '跑步'
+        AND start_time IS NOT NULL
+        AND start_time >= #{start}
+        AND start_time &lt;= #{end}
+        GROUP BY DATE_FORMAT(start_time, '%Y-%m')
+        ORDER BY month ASC
+    </select>
+
+</mapper>

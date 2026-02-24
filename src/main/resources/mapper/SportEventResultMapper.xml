@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="geist.hegel.dao.SportEventResultMapper">
+
+    <select id="selectPageByCond" resultType="geist.hegel.entity.SportEventResult">
+        select * from (
+            SELECT
+            r.id,
+            r.event_id,
+
+            /* 子查询：赛事名称 */
+            (SELECT e.title
+            FROM sport_event e
+            WHERE e.id = r.event_id) AS eventTitle,
+
+            /* 子查询：赛事创建者ID */
+            (SELECT e.created_by
+            FROM sport_event e
+            WHERE e.id = r.event_id) AS event_creator_id,
+
+            r.user_id AS userId,
+
+            /* 子查询：用户名 */
+            (SELECT u.username
+            FROM sys_user u
+            WHERE u.id = r.user_id) AS username,
+
+            r.score_value AS scoreValue,
+            r.score_unit AS scoreUnit,
+            r.rank_no AS rankNo,
+            r.remark,
+            r.published,
+            r.created_at AS createdAt,
+            r.updated_at AS updatedAt
+
+            FROM sport_event_result r
+            <where>
+                <if test="cond.eventId != null">
+                    AND r.event_id = #{cond.eventId}
+                </if>
+
+                <if test="cond.userId != null">
+                    AND r.user_id = #{cond.userId}
+                </if>
+
+                <if test="cond.published != null">
+                    AND r.published = #{cond.published}
+                </if>
+            </where>
+
+            ORDER BY r.created_at DESC
+        ) tmp
+        <where>
+            <if test="cond.eventCreatorId != null">
+                AND tmp.event_creator_id = #{cond.eventCreatorId}
+            </if>
+        </where>
+    </select>
+
+</mapper>

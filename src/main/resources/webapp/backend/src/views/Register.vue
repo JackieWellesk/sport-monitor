@@ -5,8 +5,8 @@
         <el-col :xs="22" :sm="16" :md="10" :lg="8" :xl="6">
           <el-card shadow="always">
             <template #header>
-              <el-space alignment="center" :size="12">
-                <el-avatar :size="36" :icon="EditPen" />
+              <el-space alignment="center">
+                <el-avatar :icon="EditPen" />
                 <el-text size="large" tag="b">用户注册</el-text>
               </el-space>
             </template>
@@ -77,6 +77,8 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
+import request from '@/utils/request'
+import {useAuthStore} from "@/stores/auth";
 
 const router = useRouter()
 const route = useRoute()
@@ -102,15 +104,12 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   confirmPassword: [{ validator: validateConfirm, trigger: 'blur' }]
 }
+const auth = useAuthStore()
 
 // 示例：请替换成你的真实后端接口
-async function registerApi() {
+async function registerApi(data) {
   // 这里演示：非空且两次密码一致即成功
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ ok: true })
-    }, 350)
-  })
+  return request.post('/api/auth/register', data)
 }
 
 function goLogin() {
@@ -120,10 +119,20 @@ function goLogin() {
   })
 }
 
-onMounted(() => {
+onMounted(async() => {
   // 从登录页过来可带 username 预填
   const u = route.query.username
   if (typeof u === 'string' && u) form.username = u
+  try {
+    if (!auth.user) {
+      await auth.fetchMe()
+    }
+    if (auth.user.roleCode !== 'anonymousUser') {
+      router.replace('/home')
+    }
+  } catch {
+    // 未登录不处理
+  }
 })
 
 async function onSubmit() {
@@ -136,7 +145,8 @@ async function onSubmit() {
       loading.value = true
       await registerApi({
         username: form.username,
-        password: form.password
+        password: form.password,
+        roleCode: 'TEACHER',
       })
 
       ElMessage.success('注册成功，请登录')

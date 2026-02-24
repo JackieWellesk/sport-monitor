@@ -5,8 +5,8 @@
         <el-col :xs="22" :sm="16" :md="10" :lg="8" :xl="6">
           <el-card shadow="always">
             <template #header>
-              <el-space alignment="center" :size="12">
-                <el-avatar :size="36" :icon="UserFilled" />
+              <el-space alignment="center">
+                <el-avatar :icon="UserFilled" />
                 <el-text size="large" tag="b">校园运动监测系统</el-text>
               </el-space>
             </template>
@@ -52,7 +52,7 @@
 
             <el-row justify="space-between" align="middle">
               <el-text type="info" size="small">没有账号？</el-text>
-              <el-link type="primary" :underline="false" @click="goRegister">去注册</el-link>
+              <el-link type="primary" :underline='"never"' @click="goRegister">去注册</el-link>
             </el-row>
           </el-card>
         </el-col>
@@ -63,10 +63,12 @@
 
 <script setup>
 defineOptions({ name: 'LoginView' })
+import {useAuthStore} from "@/stores/auth";
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -86,25 +88,10 @@ const rules = {
 }
 
 // 示例：请替换成你的真实后端接口
-async function loginApi(payload) {
-  // 这里演示：非空即成功
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        token: 'mock-token',
-        user: {
-          username: payload.username,
-          avatarUrl: ''
-        }
-      })
-    }, 350)
-  })
+async function loginApi(data) {
+  return request.post('/api/auth/login', data)
 }
 
-function safeSetAuth(res) {
-  localStorage.setItem('token', res.token)
-  localStorage.setItem('user', JSON.stringify(res.user || {}))
-}
 
 function goRegister() {
   router.push({
@@ -112,15 +99,23 @@ function goRegister() {
     query: { username: form.username || '' }
   })
 }
+const auth = useAuthStore()
 
-onMounted(() => {
+onMounted(async() => {
   // 注册页跳回来可带 username 预填
   const u = route.query.username
   if (typeof u === 'string' && u) form.username = u
 
-  // 已登录就不该停在登录页
-  const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-  if (token) router.replace('/home')
+  try {
+    if (!auth.user) {
+      await auth.fetchMe()
+    }
+    if (auth.user.roleCode !== 'anonymousUser') {
+      router.replace('/home')
+    }
+  } catch {
+    // 未登录不处理
+  }
 })
 
 async function onSubmit() {
@@ -131,8 +126,9 @@ async function onSubmit() {
 
     try {
       loading.value = true
-      const res = await loginApi({ ...form })
-      safeSetAuth(res)
+      await loginApi({ ...form })
+      // ✅ 登录成功后马上把 user 拉下来，保证 auth.user 有值
+      await auth.fetchMe()
 
       ElMessage.success('登录成功')
 
