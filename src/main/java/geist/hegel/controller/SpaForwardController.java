@@ -11,7 +11,7 @@ public class SpaForwardController {
         return "forward:/front/index.html";
     }
 
-    @GetMapping({"/front/{path:[^\\.]*}", "/front/**/{path:[^\\.]*}"})
+    @GetMapping({"/front/{path:[^.]*}", "/front/**/{path:[^.]*}"})
     public String frontRoutes() {
         return "forward:/front/index.html";
     }
@@ -21,7 +21,7 @@ public class SpaForwardController {
         return "forward:/admin/index.html";
     }
 
-    @GetMapping({"/admin/{path:[^\\.]*}", "/admin/**/{path:[^\\.]*}"})
+    @GetMapping({"/admin/{path:[^.]*}", "/admin/**/{path:[^.]*}"})
     public String adminRoutes() {
         return "forward:/admin/index.html";
     }
